@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -72,7 +72,7 @@ class Report(BaseModel):
     total_episodes: int
     top_categories: List[CategoryBreakdown]
     top_actors: List[ActorInsight]
-    top_directors: List[Dict[str, any]]
+    top_directors: List[Dict[str, Any]]
     platform_breakdown: List[PlatformBreakdown]
     peak_hours: Dict[str, int]
     binge_sessions: int

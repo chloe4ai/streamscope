@@ -23,6 +23,7 @@ class Category(str, Enum):
     HORROR = "Horror"
     ANIMATION = "Animation"
     KIDS = "Kids"
+    FANTASY = "Fantasy"
 
 
 class User(BaseModel):

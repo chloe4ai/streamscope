@@ -1,0 +1,176 @@
+name: Deploy StreamScope
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Validate code quality
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate JavaScript
+        run: |
+          for file in frontend/js/*.js; do
+            node --check "$file" || exit 1
+          done
+          echo "All JavaScript files are syntactically valid"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Validate Python
+        run: |
+          python -m py_compile backend/models.py
+          python -m py_compile backend/database.py
+          python -m py_compile backend/recommendation.py
+          python -m py_compile backend/main.py
+          echo "All Python files are syntactically valid"
+
+  # Deploy frontend to GitHub Pages
+  deploy-frontend:
+    name: Deploy Frontend
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './frontend'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Build and test backend
+  test-backend:
+    name: Test Backend
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          python -c "from main import app; print('FastAPI app loads successfully')"
+
+  # Build and push Docker image
+  deploy-backend:
+    name: Build & Push Backend
+    needs: [validate, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Create release
+  release:
+    name: Create Release
+    needs: [deploy-frontend, deploy-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.0
+          release_name: StreamScope v1.0.0
+          draft: true
+          prerelease: false
+          body: |
+            ## StreamScope - CTV Cross-Platform Recommendation Engine
+
+            A sophisticated viewing analytics and recommendation platform that unifies your streaming history across Netflix, HBO Max, Hulu, Disney+, and Prime Video.
+
+            ### Features
+            - 📊 Dashboard with real-time viewing metrics
+            - 📈 Weekly, monthly, and all-time reports
+            - 🎯 AI-powered cross-platform recommendations
+            - 🔗 Clickable links to streaming platforms
+
+            ### Deployment
+            - Frontend: GitHub Pages
+            - Backend: Container Registry

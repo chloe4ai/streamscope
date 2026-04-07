@@ -142,36 +142,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Create release
-  release:
-    name: Create Release
-    needs: [deploy-frontend, deploy-backend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v1.0.0
-          release_name: StreamScope v1.0.0
-          draft: true
-          prerelease: false
-          body: |
-            ## StreamScope - CTV Cross-Platform Recommendation Engine
-
-            A sophisticated viewing analytics and recommendation platform that unifies your streaming history across Netflix, HBO Max, Hulu, Disney+, and Prime Video.
-
-            ### Features
-            - 📊 Dashboard with real-time viewing metrics
-            - 📈 Weekly, monthly, and all-time reports
-            - 🎯 AI-powered cross-platform recommendations
-            - 🔗 Clickable links to streaming platforms
-
-            ### Deployment
-            - Frontend: GitHub Pages
-            - Backend: Container Registry

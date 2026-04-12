@@ -4,7 +4,8 @@
 
 A sophisticated viewing analytics and recommendation platform that unifies your streaming history across Netflix, HBO Max, Hulu, Disney+, and Prime Video into one powerful dashboard.
 
-![StreamScope Dashboard](https://via.placeholder.com/1200x630?text=StreamScope+Dashboard)
+Demo: https://chloe4ai.github.io/streamscope/
+
 
 ## Features
 

@@ -183,7 +183,7 @@ function renderDashboard() {
     animateValue('total-watch-hours', 0, totalHours, 600);
     animateValue('total-entries', 0, viewingHistory.length, 500);
 
-    const reportData = generateMockReport('monthly');
+    const reportData = generateMockReport('monthly', viewingHistory);
 
     setTimeout(() => {
         charts.renderDonutChart('categoryChart', reportData.top_categories);
@@ -353,116 +353,9 @@ document.querySelectorAll('.service-item').forEach(item => {
 });
 
 // Generate mock report helper
-function generateMockReport(period) {
-    const now = new Date();
-    let startDate;
-
-    if (period === 'weekly') {
-        startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    } else if (period === 'monthly') {
-        startDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
-    } else {
-        startDate = new Date(now - 90 * 24 * 60 * 60 * 1000);
-    }
-
-    const periodHistory = viewingHistory.filter(entry => {
-        const entryDate = new Date(entry.watched_at);
-        return entryDate >= startDate;
-    });
-
-    if (periodHistory.length === 0) {
-        return {
-            total_watch_time_minutes: 0,
-            total_episodes: 0,
-            top_categories: [],
-            top_actors: [],
-            top_directors: [],
-            platform_breakdown: [],
-            peak_hours: {},
-            binge_sessions: 0
-        };
-    }
-
-    const totalWatchTime = periodHistory.reduce((sum, e) => sum + e.watch_duration_minutes, 0);
-
-    const categoryTimes = {};
-    periodHistory.forEach(e => {
-        categoryTimes[e.category] = (categoryTimes[e.category] || 0) + e.watch_duration_minutes;
-    });
-
-    const topCategories = Object.entries(categoryTimes)
-        .map(([name, mins]) => ({
-            name,
-            percentage: Math.round((mins / totalWatchTime) * 100 * 10) / 10,
-            watch_time_minutes: mins
-        }))
-        .sort((a, b) => b.watch_time_minutes - a.watch_time_minutes);
-
-    const actorTimes = {};
-    periodHistory.forEach(e => {
-        e.actors.forEach(actor => {
-            actorTimes[actor] = (actorTimes[actor] || 0) + e.watch_duration_minutes;
-        });
-    });
-
-    const topActors = Object.entries(actorTimes)
-        .map(([name, mins]) => ({
-            name,
-            hours: Math.round(mins / 60 * 10) / 10,
-            appearances: periodHistory.filter(e => e.actors.includes(name)).length
-        }))
-        .sort((a, b) => b.hours - a.hours);
-
-    const directorTimes = {};
-    periodHistory.forEach(e => {
-        directorTimes[e.director] = (directorTimes[e.director] || 0) + e.watch_duration_minutes;
-    });
-
-    const topDirectors = Object.entries(directorTimes)
-        .map(([name, mins]) => ({
-            name,
-            hours: Math.round(mins / 60 * 10) / 10
-        }))
-        .sort((a, b) => b.hours - a.hours);
-
-    const platformTimes = {};
-    periodHistory.forEach(e => {
-        platformTimes[e.platform] = (platformTimes[e.platform] || 0) + e.watch_duration_minutes;
-    });
-
-    const platformBreakdown = Object.entries(platformTimes)
-        .map(([platform, mins]) => ({
-            platform,
-            percentage: Math.round((mins / totalWatchTime) * 100 * 10) / 10,
-            watch_time_minutes: mins
-        }))
-        .sort((a, b) => b.watch_time_minutes - a.watch_time_minutes);
-
-    const hourCounts = {};
-    periodHistory.forEach(e => {
-        const hour = new Date(e.watched_at).getHours();
-        const hourKey = `${hour.toString().padStart(2, '0')}:00`;
-        hourCounts[hourKey] = (hourCounts[hourKey] || 0) + 1;
-    });
-
-    const bingeDays = new Set();
-    periodHistory.forEach(e => {
-        if (e.watch_duration_minutes >= 180) {
-            bingeDays.add(new Date(e.watched_at).toDateString());
-        }
-    });
-
-    return {
-        total_watch_time_minutes: totalWatchTime,
-        total_episodes: periodHistory.length,
-        top_categories: topCategories,
-        top_actors: topActors,
-        top_directors: topDirectors,
-        platform_breakdown: platformBreakdown,
-        peak_hours: hourCounts,
-        binge_sessions: bingeDays.size
-    };
-}
+// generateMockReport lives in api.js. A second copy here silently shadowed it, and
+// that copy returned no start_date/end_date, which is why the report header rendered
+// "Invalid Date - Invalid Date".
 
 // Add spin animation for sync button
 const spinStyle = document.createElement('style');

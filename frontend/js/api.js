@@ -46,7 +46,8 @@ const api = {
             const newEntry = {
                 id: 'v' + Date.now(),
                 ...entry,
-                watched_at: new Date().toISOString()
+                watch_duration_minutes: Number(entry.watch_duration_minutes) || 0,
+                watched_at: entry.watched_at || new Date().toISOString()
             };
             MOCK_VIEWING_HISTORY.unshift(newEntry);
             return newEntry;
@@ -63,7 +64,8 @@ const api = {
             const newEntry = {
                 id: 'v' + Date.now(),
                 ...entry,
-                watched_at: new Date().toISOString()
+                watch_duration_minutes: Number(entry.watch_duration_minutes) || 0,
+                watched_at: entry.watched_at || new Date().toISOString()
             };
             MOCK_VIEWING_HISTORY.unshift(newEntry);
             return newEntry;
@@ -101,7 +103,7 @@ const api = {
 };
 
 // Generate mock report data
-function generateMockReport(period) {
+function generateMockReport(period, history = MOCK_VIEWING_HISTORY, userId = MOCK_USER.id) {
     const now = new Date();
     let startDate;
 
@@ -114,7 +116,7 @@ function generateMockReport(period) {
     }
 
     // Filter history by period
-    const periodHistory = MOCK_VIEWING_HISTORY.filter(entry => {
+    const periodHistory = history.filter(entry => {
         const entryDate = new Date(entry.watched_at);
         return entryDate >= startDate;
     });
@@ -203,7 +205,7 @@ function generateMockReport(period) {
     });
 
     return {
-        user_id: 'demo_user_001',
+        user_id: userId,
         period,
         start_date: startDate.toISOString(),
         end_date: now.toISOString(),

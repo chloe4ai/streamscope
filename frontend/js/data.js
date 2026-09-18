@@ -91,8 +91,10 @@ function getShowUrl(title, platform) {
         return PLATFORM_URLS.prime.search + encodeURIComponent(title);
     }
 
-    // Fallback to search
-    return PLATFORM_URLS[platform].search + encodeURIComponent(title);
+    // Fallback to search. An unknown platform must not throw: the caller renders a link.
+    const urls = PLATFORM_URLS[platform];
+    if (!urls) return "https://www.google.com/search?q=" + encodeURIComponent(title + " stream");
+    return urls.search + encodeURIComponent(title);
 }
 
 const MOCK_VIEWING_HISTORY = [
